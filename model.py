@@ -27,11 +27,15 @@ class Dasnet(nn.Module):
         self.sixth_age = nnp.SingleConv(512, 512, 2)
         self.sixth_sex = nnp.SingleConv(512, 512, 2)
 
+        self.seventh_age = nn.Linear(1024, 1)
+        self.seventh_sex = nn.Linear(512, 1)
+
+
     def forward(self, x):
         age = self.first_age(x)
-        sex = self.first_sex(x)
+        sex = self.first_sex(x).float()
 
-        age = torch.cat((age, sex), 1)
+        age = torch.cat((age,sex), 1)
         age = self.sec_age(age)
         sex = self.sec_sex(sex)
 
@@ -50,11 +54,18 @@ class Dasnet(nn.Module):
         sex = self.fifth_sex(sex)
         sex = self.sixth_sex(sex)
 
-        age = torch.cat((age, sex), 1)
         age = F.avg_pool2d(age, kernel_size=(1, 9))
         sex = F.avg_pool2d(sex, kernel_size=(1, 9))
 
-        age = torch.sigmoid(age)
+        age = torch.cat((age, sex), 1)
+        age = age.view(age.size(0), -1)
+        age = self.seventh_age(age)
+
+        sex = sex.view(sex.size(0), -1)
+        sex = self.seventh_sex(sex)
         sex = torch.sigmoid(sex)
 
         return [age, sex]
+
+def lt(tensor):
+    return tensor.type(torch.LongTensor)

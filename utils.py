@@ -1,5 +1,6 @@
 import numpy as np
-
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 def resize_single_image(image, target_size):
     import numpy as np
@@ -23,7 +24,6 @@ def stratified_cv_split_ttv_age_and_sex(age: np.array, sex: np.array, k: int, or
         :param age_bin_width: Width of the bin used to compile the age histogram
         :return: The train/validation/test indices for each Cross Validation iteration
         """
-
     if len(age) != len(sex):
         raise Exception("age and sex vectors must have the same length")
     if original_idx is not None and len(original_idx) != len(age):
@@ -52,6 +52,7 @@ def stratified_cv_split_ttv_age_and_sex(age: np.array, sex: np.array, k: int, or
         ab, sb = histogram_coordinates[next_histogram_coordinate]
         idx_inside_bins = np.array(
             [i for i in range(N) if age_bins[ab] <= age[i] < age_bins[ab + 1] and sex[i] == sb])
+
         for i in idx_inside_bins:
             folds[fold_order[added]].append(i)
             added += 1
