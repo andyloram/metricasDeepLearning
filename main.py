@@ -66,7 +66,7 @@ def main():
         model.load_state_dict(best_epoch_model)
         print("BEST EPOCH RESULT :: {}/{} EPOCH: TOTAL LOSS = {} / AGE_LOSS = {} / SEX_LOSS = {} / AVG_AGE_DIFF = {} / AVG_SEX_DIFF = {}".format(best_epoch, N_EPOCHS, best_epoch_result[0], best_epoch_result[1],best_epoch_result[2], best_epoch_result[3], best_epoch_result[4]), file=log_file)
         torch.save(model.state_dict(),RESULTS_WEIGHTS_PATH.joinpath("{}_fold_model.pth".format(i)))
-        age, age_out, sex, sex_out, total_test_loss, age_test_loss, sex_test_loss, avg_age_diff, avg_sex_diff= train_ut.validate(model, test_gen, age_criterion, sex_criterion)
+        age, age_out, sex, sex_out, total_test_loss, age_test_loss, sex_test_loss, avg_age_diff, avg_sex_diff= train_ut.validate(model, test_gen, age_criterion, sex_criterion, 'test')
 
         print("TEST :: TOTAL LOSS = {} / AGE_LOSS = {} / SEX_LOSS = {} / AVG_AGE_DIFF = {} / AVG_SEX_DIFF = {}".format(total_test_loss, age_test_loss, sex_test_loss, avg_age_diff, avg_sex_diff), file = results_file)
 

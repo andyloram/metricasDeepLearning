@@ -32,7 +32,7 @@ def train(model, loader, age_criterion, sex_criterion, optimizer):
 
 
 
-def validate(model, loader, age_criterion, sex_criterion):
+def validate(model, loader, age_criterion, sex_criterion, mode = 'val'):
     model.eval()
     batch_losses_age = 0
     batch_losses_sex = 0
@@ -68,10 +68,11 @@ def validate(model, loader, age_criterion, sex_criterion):
         sex_diff = torch.abs(torch.sub(sex, sex_out))
         age_diff = torch.abs(torch.sub(age, age_out))
 
-        age_data = torch.cat((age_data, age), 0)
-        age_pred = torch.cat((age_pred, age_out), 0)
-        sex_data = torch.cat((sex_data, sex), 0)
-        sex_pred = torch.cat((sex_pred, sex_out), 0)
+        if mode == 'test':
+            age_data = torch.cat((age_data, age), 0)
+            age_pred = torch.cat((age_pred, age_out), 0)
+            sex_data = torch.cat((sex_data, sex), 0)
+            sex_pred = torch.cat((sex_pred, sex_out), 0)
 
         batch_sex_diff_avg += torch.sum(sex_diff).float() / len(age)
         batch_age_diff_avg += torch.sum(age_diff).float() / len(age)
