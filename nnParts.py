@@ -33,5 +33,6 @@ class SingleConv(nn.Module):
                 nn.ReLU(inplace=True),
             )
 
+
     def forward(self, x):
         return self.single_conv(x)

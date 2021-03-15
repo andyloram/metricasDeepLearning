@@ -29,7 +29,7 @@ class Dasnet(nn.Module):
 
         self.seventh_age = nn.Linear(1024, 1)
         self.seventh_sex = nn.Linear(512, 1)
-
+        self.init_weights()
 
     def forward(self, x):
         age = self.first_age(x)
@@ -66,6 +66,16 @@ class Dasnet(nn.Module):
         sex = torch.sigmoid(sex)
 
         return [age, sex]
+    
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m,nn.Conv2d) or isinstance(m,nn.Linear):
+                torch.nn.init.xavier_uniform_(m.weight)
+                
+                if m.bias is not None:
+                    nn.init.constant_(m.bias,0)
 
-def lt(tensor):
-    return tensor.type(torch.LongTensor)
+            if isinstance(m,nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias,0)
+                

@@ -1,6 +1,5 @@
 import numpy as np
-import matplotlib as mpl
-import matplotlib.pyplot as plt
+from sklearn.metrics import roc_auc_score, recall_score, precision_score, accuracy_score
 
 def resize_single_image(image, target_size):
     import numpy as np
@@ -59,3 +58,41 @@ def stratified_cv_split_ttv_age_and_sex(age: np.array, sex: np.array, k: int, or
         next_histogram_coordinate += 1
 
     return folds
+
+def print_metrics(age, age_pred, sex, sex_pred, print_file):
+    n_age = age.cpu().numpy()
+    n_age_pred = age_pred.cpu().numpy()
+    n_sex = sex.cpu().numpy()
+    n_sex_pred = sex_pred.cpu().numpy()
+
+    #print(n_age)
+    #print(n_age_pred)
+    #print(n_sex)
+    #print(n_sex_pred)
+
+    error_age= n_age - n_age_pred
+    rmse_age = np.sqrt(np.mean(np.square(error_age)))
+    me = np.mean(error_age)
+    mede = np.median(error_age)
+    iqre = np.quantile(error_age, 0.75) - np.quantile(error_age, 0.25)
+    stde = np.std(error_age)
+    absolute_error_age = np.abs(error_age)
+    mae = np.mean(absolute_error_age)
+    medae = np.median(absolute_error_age)
+    iqrae = np.quantile(absolute_error_age, 0.75) - np.quantile(absolute_error_age, 0.25)
+    stdae = np.std(absolute_error_age)
+    
+    print("ME: {:.2f}".format(me / 365), file=print_file)
+    print("STDE: {:.2f}".format(stde / 365), file=print_file)
+    print("MEDE: {:.2f}".format(mede / 365), file=print_file)
+    print("IQRE: {:.2f}".format(iqre / 365), file=print_file)
+    print("MAE: {:.2f}".format(mae / 365), file=print_file)
+    print("MEDAE: {:.2f}".format(medae / 365), file=print_file)
+    print("STDAE: {:.2f}".format(stdae / 365), file=print_file)
+    print("IQRAE: {:.2f}".format(iqrae / 365), file=print_file)
+    print("RMSE age: {:.2f}".format(rmse_age / 365), file=print_file)
+
+    print("\nAccuracy sex: {:.2f}".format(accuracy_score(n_sex, np.round(n_sex_pred))),file=print_file)
+    print("Sensitivity sex: {:.2f}".format(recall_score(n_sex, np.round(n_sex_pred))), file=print_file)
+    print("Specificity sex: {:.2f}".format(precision_score(n_sex, np.round(n_sex_pred))), file=print_file)
+    print("AUC sex: {:.2f}".format(roc_auc_score(n_sex, n_sex_pred)), file=print_file)

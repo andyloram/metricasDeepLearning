@@ -6,7 +6,8 @@ import pandas as pd
 from imageio import imread
 from tqdm import tqdm
 
-from config import RESIZED_SHAPE, DATASET_METADATA_PATH, DATASET_IMAGES_PATH, COMPILED_DATASETS_PATH
+from config import RESIZED_SHAPE, DATASET_METADATA_PATH, DATASET_IMAGES_PATH, COMPILED_DATASETS_PATH, \
+    MAX_AGE, MIN_AGE, RNG_DATASET_NAME
 from utils import stratified_cv_split_ttv_age_and_sex
 from utils import resize_single_image
 
@@ -117,10 +118,14 @@ def build_dataset_age_range(full_dataset, min_age, max_age, dataset_name, includ
             pickle.dump(folds, f)
 
     return dataset, folds
+
+
 inc_bad_qual = True
 
 full_dataset_w_bad_quality, full_dataset_w_bad_quality_folds = build_full_dataset(name="all", img_shape=RESIZED_SHAPE,
-                                                include_bad_quality_images=inc_bad_qual)
-range_dataset_w_bad_quality, range_dataset_w_bad_quality_folds=build_dataset_age_range(full_dataset_w_bad_quality,
-                        min_age=15 * 365, max_age=25 * 365,
-                        dataset_name="15-25", include_bad_quality_images=inc_bad_qual)
+                                                                                  include_bad_quality_images=inc_bad_qual)
+range_dataset_w_bad_quality, range_dataset_w_bad_quality_folds = build_dataset_age_range(full_dataset_w_bad_quality,
+                                                                                         min_age=MIN_AGE * 365,
+                                                                                         max_age=MAX_AGE * 365,
+                                                                                         dataset_name=RNG_DATASET_NAME,
+                                                                                         include_bad_quality_images=inc_bad_qual)
