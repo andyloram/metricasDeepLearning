@@ -78,7 +78,7 @@ def main():
                 print("UPGRADE FIN / EPOCH: {}".format(best_epoch), file=log_file)
                 break
 
-        #model.load_state_dict(best_epoch_model)
+        model.load_state_dict(best_epoch_model)
         print(
             "BEST EPOCH RESULT :: {}/{} EPOCH: TOTAL LOSS = {} / AGE_LOSS = {} / SEX_LOSS = {} / AVG_AGE_DIFF = {} / AVG_SEX_DIFF = {}".format(
                 best_epoch, N_EPOCHS, best_epoch_result[0], best_epoch_result[1], best_epoch_result[2],
