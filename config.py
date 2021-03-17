@@ -8,7 +8,6 @@ DATASET_IMAGES_PATH = Path.home() / "Projects" / "data" / "img_jpg"
 COMPILED_DATASETS_PATH = Path(__file__).parent.absolute()/ "compiled_Datasets"
 RESIZED_SHAPE = (128, 256)
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-batch_size = 4
 BATCH_SIZE = 4
 N_EPOCHS = 200
 VAL_SPLIT = 0.2

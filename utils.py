@@ -82,7 +82,7 @@ def print_metrics(age, age_pred, sex, sex_pred, print_file):
     iqrae = np.quantile(absolute_error_age, 0.75) - np.quantile(absolute_error_age, 0.25)
     stdae = np.std(absolute_error_age)
     
-    print("ME: {:.2f}".format(me / 365), file=print_file)
+    print("\nME: {:.2f}".format(me / 365), file=print_file)
     print("STDE: {:.2f}".format(stde / 365), file=print_file)
     print("MEDE: {:.2f}".format(mede / 365), file=print_file)
     print("IQRE: {:.2f}".format(iqre / 365), file=print_file)
@@ -96,3 +96,6 @@ def print_metrics(age, age_pred, sex, sex_pred, print_file):
     print("Sensitivity sex: {:.2f}".format(recall_score(n_sex, np.round(n_sex_pred))), file=print_file)
     print("Specificity sex: {:.2f}".format(precision_score(n_sex, np.round(n_sex_pred))), file=print_file)
     print("AUC sex: {:.2f}".format(roc_auc_score(n_sex, n_sex_pred)), file=print_file)
+
+    return me
+
