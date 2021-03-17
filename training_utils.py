@@ -39,7 +39,7 @@ def train(model, loader, age_criterion, sex_criterion, optimizer, writer, fold, 
         writer.add_scalar('{}-fold Train Sex Loss'.format(fold),
                           sex_loss, i+steps)
         total_steps+=1
-        return total_steps
+    return total_steps
 
 
 def validate(model, loader, age_criterion, sex_criterion,writer,fold, mode = 'val'):
