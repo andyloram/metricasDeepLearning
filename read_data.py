@@ -1,13 +1,13 @@
 import pickle
 from pathlib import Path
-
+import math
 import numpy as np
 import pandas as pd
 from imageio import imread
 from tqdm import tqdm
 
 from config import RESIZED_SHAPE, DATASET_METADATA_PATH, DATASET_IMAGES_PATH, COMPILED_DATASETS_PATH, \
-    MAX_AGE, MIN_AGE, RNG_DATASET_NAME
+    MAX_AGE, MIN_AGE, RNG_DATASET_NAME, STATIC_TEST, TEST_DATA_PATH, N_FOLDS, STATIC_FOLDS
 from utils import stratified_cv_split_ttv_age_and_sex
 from utils import resize_single_image
 
@@ -31,6 +31,21 @@ for i, row in anon_dataframe.iterrows():
     bad_age[idx] = row["bad_age"] in ['x', 'X']
     bad_quality[idx] = row["bad_quality"] in ['x', 'X']
     bad_sex[idx] = sex[idx] == "Unknown"
+
+
+if STATIC_TEST:
+    test_idx =[]
+    test_dataframe = pd.read_csv(TEST_DATA_PATH)
+    test_idx = np.array(test_dataframe.iloc[:, 1].to_list())
+    test_idx = [x for x in test_idx if math.isnan(x) == False]
+    fold_values = {k: [] for k in list(range(N_FOLDS))}
+    if STATIC_FOLDS:
+
+        for k in range(len(fold_values)):
+            aux_fold=np.array(test_dataframe.iloc[:, k+2].to_list())
+            fold_values[k] = [x for x in aux_fold if math.isnan(x) == False]
+
+
 
 
 # Full dataset
@@ -57,7 +72,7 @@ def build_full_dataset(name, img_shape, include_bad_quality_images):
         print("Calculating folds...")
         folds = stratified_cv_split_ttv_age_and_sex(np.array([age[i] for i in idx_valid]),  # Vector de idades
                                                     np.array([sex[t] for t in idx_valid]),  # Vector de sexos
-                                                    k=8,  # Número de particións
+                                                    k=N_FOLDS,  # Número de particións
                                                     original_idx=idx_valid)  # Identificadores das imaxes
 
         print("Reading images...")
@@ -70,7 +85,7 @@ def build_full_dataset(name, img_shape, include_bad_quality_images):
             dataset[idx]["age"] = age[idx]
             dataset[idx]["sex"] = sex[idx]
 
-        print("{} images collected".format(len(idx_valid)))
+
 
         with ecv_file.open("wb") as f:
             pickle.dump(folds, f)
@@ -78,6 +93,7 @@ def build_full_dataset(name, img_shape, include_bad_quality_images):
         with dataset_file.open("wb") as f:
             pickle.dump(dataset, f)
 
+    print("{} images collected".format(len(idx_valid)))
     return dataset, folds
 
 
@@ -85,6 +101,17 @@ def build_dataset_age_range(full_dataset, min_age, max_age, dataset_name, includ
     idx_valid = np.array(
         [i for i in full_dataset.keys() if
          not bad_age[i] and min_age <= age[i] < max_age and (not bad_quality[i] or include_bad_quality_images)])
+    idx_folds = np.copy(idx_valid)
+
+    if STATIC_TEST==True:
+        remove_idx=[]
+        for i in range(len(idx_valid)):
+            for j in test_idx:
+                if idx_valid[i] == j:
+                    remove_idx.append(i)
+        idx_folds =np.delete(idx_valid, remove_idx)
+
+
     dataset_file_template = "{}_dataset_w_bad_quality.pkl" if include_bad_quality_images else "{}_dataset_wo_bad_quality.pkl"
     ecv_file_template = "{}_ecv_w_bad_quality.pkl" if include_bad_quality_images else "{}_ecv_wo_bad_quality.pkl"
     dataset_file = COMPILED_DATASETS_PATH.joinpath(dataset_file_template.format(dataset_name))
@@ -96,24 +123,46 @@ def build_dataset_age_range(full_dataset, min_age, max_age, dataset_name, includ
         with dataset_file.open("rb") as f:
             dataset = pickle.load(f)
     else:
-        print("{} images collected".format(len(idx_valid)))
 
         dataset = {i: full_dataset[i] for i in idx_valid}
 
         with dataset_file.open("wb") as f:
             pickle.dump(dataset, f)
 
+    print("{} images collected".format(len(idx_valid)))
+    if STATIC_TEST:
+        print("{} images for train-eval".format(len(idx_folds)))
+        print("{} images for test".format(len(idx_valid)-len(idx_folds)))
     if ecv_file.is_file():
         print("Cross validation indices already exist")
         with ecv_file.open("rb") as f:
             folds = pickle.load(f)
     else:
         print("Building cross validation indices between {:.1f} and {:.1f} years old".format(min_age / 365,
-                                                                                             max_age / 365))
-        folds = stratified_cv_split_ttv_age_and_sex(age=np.array([age[i] for i in idx_valid]),
-                                                    sex=np.array([sex[i] for i in idx_valid]),
-                                                    k=8,
-                                                    original_idx=idx_valid)
+                                                                                       max_age / 365))
+        folds = {k: [] for k in list(range(N_FOLDS))}
+
+        if STATIC_FOLDS==False:
+            folds_aux = stratified_cv_split_ttv_age_and_sex(age=np.array([age[i] for i in idx_folds]),
+                                                        sex=np.array([sex[i] for i in idx_folds]),
+                                                        k=N_FOLDS,
+                                                        original_idx=idx_folds)
+
+            aux_dataset = {i: full_dataset[i] for i in idx_folds}
+            for k in range(len(folds_aux)):
+                for t in folds_aux[k]:
+                    fold_values[k].append(list(aux_dataset.keys())[t])
+
+        for k in range(len(fold_values)):
+            for i in range(len(dataset.keys())):
+                    for t in range(len(fold_values[k])):
+                        if fold_values[k][t]==list(dataset.keys())[i]:
+                            folds[k].append(i)
+
+
+
+
+
         with ecv_file.open("wb") as f:
             pickle.dump(folds, f)
 

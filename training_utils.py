@@ -1,5 +1,5 @@
 import torch
-from config import DEVICE, OMEGA, BATCH_SIZE
+from config import DEVICE, OMEGA
 
 def train(model, loader, age_criterion, sex_criterion, optimizer, writer, fold, steps):
     model.train()

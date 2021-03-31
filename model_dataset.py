@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import Dataset
 import numpy as np
-from config import RESIZED_SHAPE, DEVICE
+from config import RESIZED_SHAPE
 
 
 class ModelDataset(Dataset):

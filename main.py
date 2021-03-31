@@ -2,7 +2,7 @@ import torch
 import dataset_utils as dat_ut
 from dataset_utils import N_FOLDS
 import model as m
-from config import DEVICE, N_EPOCHS, RNG_DATASET_NAME, MAX_ITER_NO_IMPROVE
+from config import DEVICE, N_EPOCHS, RNG_DATASET_NAME, MAX_ITER_NO_IMPROVE, STATIC_TEST
 import training_utils as train_ut
 import torch.nn as nn
 from utils import print_metrics
@@ -15,13 +15,12 @@ file_name = RNG_DATASET_NAME
 RESULTS_WEIGHTS_PATH = Path(__file__).parent.absolute() / file_name
 if not RESULTS_WEIGHTS_PATH.is_dir():
     RESULTS_WEIGHTS_PATH.mkdir()
-INITIAL_MODEL_PATH = RESULTS_WEIGHTS_PATH.joinpath("initial_model.pth")
+
 
 
 def main():
     total_steps=0
     results_file = open(RESULTS_WEIGHTS_PATH.joinpath("results.txt"), "w")
-    log_file = open(RESULTS_WEIGHTS_PATH.joinpath("log.txt"), "w")
 
     age_criterion = nn.MSELoss()
     # sex_criterion = nn.NLLLoss()
@@ -36,7 +35,12 @@ def main():
         model = m.Dasnet().to(DEVICE)
         optimizer = torch.optim.Adadelta(model.parameters(), lr=1.0, rho=0.95, eps=1e-06)
 
-        training_gen, eval_gen, test_gen = dat_ut.kfold_generator(i)
+        if STATIC_TEST:
+            training_gen, eval_gen, test_gen = dat_ut.kfold_generator_simple(i)
+        else:
+            training_gen, eval_gen, test_gen = dat_ut.kfold_generator_simple(i)
+
+
 
         best_epoch_result = [-1, -1, -1, -1]
         best_epoch = 0
@@ -44,8 +48,8 @@ def main():
         best_epoch_model = dict()
         no_upgrade_cont = 0
 
-        print("{}-FOLD of {}".format(i + 1, N_FOLDS), file=log_file)
-        print("{}-FOLD of {}".format(i + 1, N_FOLDS), file=results_file)
+
+        print("\n{}-FOLD of {}".format(i + 1, N_FOLDS), file=results_file)
         print("{}-FOLD of {}".format(i + 1, N_FOLDS))
 
         for k in range(1, N_EPOCHS + 1):
@@ -61,9 +65,9 @@ def main():
             writer.add_scalar('{}-fold Validation Average Age Diff'.format(i), avg_age_diff, k)
             writer.add_scalar('{}-fold Validation Average Sex Diff'.format(i), avg_sex_diff, k)
 
-            print(
-                "{}/{} EPOCH : TOTAL LOSS = {} / AGE_LOSS = {} / SEX_LOSS = {} / AVG_AGE_DIFF = {} / AVG_SEX_DIFF = {}".format(
-                    k, N_EPOCHS, total_loss, age_loss, sex_loss, avg_age_diff, avg_sex_diff), file=log_file)
+            #print(
+                #"{}/{} EPOCH : TOTAL LOSS = {} / AGE_LOSS = {} / SEX_LOSS = {} / AVG_AGE_DIFF = {} / AVG_SEX_DIFF = {}".format(
+                 #   k, N_EPOCHS, total_loss, age_loss, sex_loss, avg_age_diff, avg_sex_diff), file=log_file)
 
             if best_epoch_result[0] >= total_loss or best_epoch_result[0] == -1:
                 best_epoch_result = [total_loss, age_loss, sex_loss, avg_age_diff, avg_sex_diff]
@@ -75,14 +79,14 @@ def main():
                 no_upgrade_cont += 1
 
             if no_upgrade_cont == MAX_ITER_NO_IMPROVE:
-                print("UPGRADE FIN / EPOCH: {}".format(best_epoch), file=log_file)
+                print("UPGRADE FIN / EPOCH: {}".format(best_epoch), file=results_file)
                 break
 
         model.load_state_dict(best_epoch_model)
-        print(
-            "BEST EPOCH RESULT :: {}/{} EPOCH: TOTAL LOSS = {} / AGE_LOSS = {} / SEX_LOSS = {} / AVG_AGE_DIFF = {} / AVG_SEX_DIFF = {}".format(
-                best_epoch, N_EPOCHS, best_epoch_result[0], best_epoch_result[1], best_epoch_result[2],
-                best_epoch_result[3], best_epoch_result[4]), file=log_file)
+        #print(
+            #"BEST EPOCH RESULT :: {}/{} EPOCH: TOTAL LOSS = {} / AGE_LOSS = {} / SEX_LOSS = {} / AVG_AGE_DIFF = {} / AVG_SEX_DIFF = {}".format(
+            #best_epoch, N_EPOCHS, best_epoch_result[0], best_epoch_result[1], best_epoch_result[2],
+            #best_epoch_result[3], best_epoch_result[4]), file=log_file)
 
         torch.save(model.state_dict(), RESULTS_WEIGHTS_PATH.joinpath("{}_fold_model.pth".format(i)))
         age, age_out, sex, sex_out, total_test_loss, age_test_loss, sex_test_loss, avg_age_diff, avg_sex_diff = train_ut.validate(
@@ -102,7 +106,6 @@ def main():
     print_metrics(age_data, age_pred, sex_data, sex_pred, results_file)
 
     results_file.close()
-    log_file.close()
     writer.flush()
     writer.close()
 
