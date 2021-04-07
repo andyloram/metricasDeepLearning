@@ -35,10 +35,7 @@ def main():
         model = m.Dasnet().to(DEVICE)
         optimizer = torch.optim.Adadelta(model.parameters(), lr=1.0, rho=0.95, eps=1e-06)
 
-        if STATIC_TEST:
-            training_gen, eval_gen, test_gen = dat_ut.kfold_generator_simple(i)
-        else:
-            training_gen, eval_gen, test_gen = dat_ut.kfold_generator_simple(i)
+        training_gen, eval_gen, test_gen = dat_ut.kfold_generator_simple(i)
 
 
 

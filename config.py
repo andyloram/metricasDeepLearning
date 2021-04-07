@@ -1,7 +1,7 @@
 from pathlib import Path
 import torch
 MIN_AGE = 0
-MAX_AGE = 20
+MAX_AGE = 100
 RNG_DATASET_NAME =str(MIN_AGE)+"-"+str(MAX_AGE)
 DATASET_METADATA_PATH = Path.home() / "Projects" / "data" / "anon.xlsx"
 TEST_DATA_PATH = Path.home() / "Projects" / "data" / "test_idx.csv"
