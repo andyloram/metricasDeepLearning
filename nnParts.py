@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 
 
@@ -22,17 +21,16 @@ class SingleConv(nn.Module):
         if max_pool:
             self.single_conv = nn.Sequential(
                 nn.Conv2d(in_channels, out_channels, ks),
+                nn.ReLU(),
                 nn.BatchNorm2d(out_channels),
-                nn.ReLU(inplace=True),
                 nn.MaxPool2d(max_pool)
             )
         else:
             self.single_conv = nn.Sequential(
                 nn.Conv2d(in_channels, out_channels, ks),
+                nn.ReLU(),
                 nn.BatchNorm2d(out_channels),
-                nn.ReLU(inplace=True),
             )
-
 
     def forward(self, x):
         return self.single_conv(x)

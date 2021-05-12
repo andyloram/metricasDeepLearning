@@ -3,7 +3,6 @@ import torch.nn as nn
 import nnParts as nnp
 import torch.nn.functional as F
 
-
 class Dasnet(nn.Module):
 
     def __init__(self):
@@ -69,13 +68,12 @@ class Dasnet(nn.Module):
     
     def init_weights(self):
         for m in self.modules():
-            if isinstance(m,nn.Conv2d) or isinstance(m,nn.Linear):
+            if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
                 torch.nn.init.xavier_uniform_(m.weight)
                 
                 if m.bias is not None:
-                    nn.init.constant_(m.bias,0)
+                    nn.init.constant_(m.bias, 0)
 
-            if isinstance(m,nn.BatchNorm2d):
+            if isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias,0)
-                
+                nn.init.constant_(m.bias, 0)

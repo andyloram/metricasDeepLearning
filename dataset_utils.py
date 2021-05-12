@@ -2,22 +2,47 @@ import torch
 import numpy as np
 import model_dataset as mdataset
 import read_data as rdata
-from config import VAL_SPLIT, SHUFFLE, BATCH_SIZE, N_WORKERS, STATIC_TEST
+from config import VAL_SPLIT, SHUFFLE, BATCH_SIZE, N_WORKERS, STATIC_TEST, FIXED_GROUPS
 from torch.utils.data.sampler import SubsetRandomSampler
 
-dataset = rdata.range_dataset_w_bad_quality
-dataset_folds = rdata.range_dataset_w_bad_quality_folds
+N_FOLDS = 1
+dataset = rdata.full_dataset_w_bad_quality
 data_keys = np.array(list(dataset.keys()), dtype=np.dtype)
 random_seed = 42
-N_FOLDS = len(dataset_folds)
-if STATIC_TEST:
+
+if FIXED_GROUPS == False:
+    dataset_folds = rdata.range_dataset_w_bad_quality_folds
+    N_FOLDS = len(dataset_folds)
+
+
+if FIXED_GROUPS:
+    from read_data import test_idx, eval_idx, train_idx
+    test_data_idx_order = np.array([])
+    train_data_idx_order = np.array([])
+    eval_data_idx_order =np.array([])
+
+    for i in range(len(data_keys)):
+        for j in range(len(test_idx)):
+            if data_keys[i] == test_idx[j]:
+                test_data_idx_order = np.append(test_data_idx_order, i)
+
+    for i in range(len(data_keys)):
+        for j in range(len(train_idx)):
+            if data_keys[i] == train_idx[j]:
+                train_data_idx_order = np.append(train_data_idx_order, i)
+
+    for i in range(len(data_keys)):
+        for j in range(len(eval_idx)):
+            if data_keys[i] == eval_idx[j]:
+                eval_data_idx_order = np.append(eval_data_idx_order, i)
+
+elif STATIC_TEST:
     from read_data import test_idx
     test_data_idx_order = np.array([])
     for i in range(len(data_keys)):
         for j in range(len(test_idx)):
-            if data_keys[i]==test_idx[j]:
-                test_data_idx_order=np.append(test_data_idx_order,i)
-
+            if data_keys[i] == test_idx[j]:
+                test_data_idx_order = np.append(test_data_idx_order,i)
 
 
 def kfold_generator(index):
@@ -85,6 +110,16 @@ def kfold_generator_simple(index):
 
     return training_gen, eval_gen, test_gen
 
+def fixed_dataset_generator():
+    train_dataset = mdataset.ModelDataset(dataset,test_data_idx_order , data_keys)
+    test_dataset = mdataset.ModelDataset(dataset,test_data_idx_order, data_keys)
+    eval_dataset = mdataset.ModelDataset(dataset, eval_data_idx_order, data_keys)
+    training_gen = torch.utils.data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True,                                               num_workers=N_WORKERS)
+    eval_gen = torch.utils.data.DataLoader(eval_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=N_WORKERS)
+    test_gen = torch.utils.data.DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True,
+                                           num_workers=N_WORKERS)
+
+    return training_gen, eval_gen, test_gen
 
 def train_eval_split(data_test_eval):
     data_test_eval_size = len(data_test_eval)

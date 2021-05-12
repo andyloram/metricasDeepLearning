@@ -6,5 +6,7 @@
     </content>
     <orderEntry type="jdk" jdkName="Python 3.8 (Dasnet_3_8)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="data" />
+    <orderEntry type="module" module-name="alternativeModel" />
   </component>
 </module>

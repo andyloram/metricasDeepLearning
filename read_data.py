@@ -7,7 +7,7 @@ from imageio import imread
 from tqdm import tqdm
 
 from config import RESIZED_SHAPE, DATASET_METADATA_PATH, DATASET_IMAGES_PATH, COMPILED_DATASETS_PATH, \
-    MAX_AGE, MIN_AGE, RNG_DATASET_NAME, STATIC_TEST, TEST_DATA_PATH, N_FOLDS, STATIC_FOLDS
+    MAX_AGE, MIN_AGE, RNG_DATASET_NAME, STATIC_TEST, TEST_DATA_PATH, N_FOLDS, STATIC_FOLDS, FIXED_GROUPS, FIXED_DATA_PATH
 from utils import stratified_cv_split_ttv_age_and_sex
 from utils import resize_single_image
 
@@ -32,19 +32,28 @@ for i, row in anon_dataframe.iterrows():
     bad_quality[idx] = row["bad_quality"] in ['x', 'X']
     bad_sex[idx] = sex[idx] == "Unknown"
 
+if FIXED_GROUPS:
+    test_idx = []
+    eval_idx = []
+    train_idx =[]
+    fixed_dataframe = pd.read_csv(FIXED_DATA_PATH)
+    test_idx = np.array(fixed_dataframe.iloc[:, 1].to_list())
+    eval_idx = np.array(fixed_dataframe.iloc[:, 2].to_list())
+    train_idx = np.array(fixed_dataframe.iloc[:, 3].to_list())
+    test_idx = [x for x in test_idx if math.isnan(x) == False]
+    eval_idx = [x for x in eval_idx if math.isnan(x) == False]
+    train_idx = [x for x in train_idx if math.isnan(x) == False]
 
-if STATIC_TEST:
+elif STATIC_TEST:
     test_idx =[]
     test_dataframe = pd.read_csv(TEST_DATA_PATH)
     test_idx = np.array(test_dataframe.iloc[:, 1].to_list())
     test_idx = [x for x in test_idx if math.isnan(x) == False]
     fold_values = {k: [] for k in list(range(N_FOLDS))}
     if STATIC_FOLDS:
-
         for k in range(len(fold_values)):
             aux_fold=np.array(test_dataframe.iloc[:, k+2].to_list())
             fold_values[k] = [x for x in aux_fold if math.isnan(x) == False]
-
 
 
 
@@ -57,6 +66,7 @@ def build_full_dataset(name, img_shape, include_bad_quality_images):
     dataset = dict()
     dataset_file_template = "{}_dataset_w_bad_quality.pkl" if include_bad_quality_images else "{}_dataset_wo_bad_quality.pkl"
     ecv_file_template = "{}_ecv_w_bad_quality.pkl" if include_bad_quality_images else "{}_ecv_wo_bad_quality.pkl"
+
     dataset_file = COMPILED_DATASETS_PATH.joinpath(dataset_file_template.format(name))
     ecv_file = COMPILED_DATASETS_PATH.joinpath(ecv_file_template.format(name))
 
@@ -130,6 +140,7 @@ def build_dataset_age_range(full_dataset, min_age, max_age, dataset_name, includ
             pickle.dump(dataset, f)
 
     print("{} images collected".format(len(idx_valid)))
+
     if STATIC_TEST:
         print("{} images for train-eval".format(len(idx_folds)))
         print("{} images for test".format(len(idx_valid)-len(idx_folds)))
@@ -139,10 +150,10 @@ def build_dataset_age_range(full_dataset, min_age, max_age, dataset_name, includ
             folds = pickle.load(f)
     else:
         print("Building cross validation indices between {:.1f} and {:.1f} years old".format(min_age / 365,
-                                                                                       max_age / 365))
+                                                                            max_age / 365))
         folds = {k: [] for k in list(range(N_FOLDS))}
 
-        if STATIC_FOLDS==False:
+        if STATIC_FOLDS == False:
             folds_aux = stratified_cv_split_ttv_age_and_sex(age=np.array([age[i] for i in idx_folds]),
                                                         sex=np.array([sex[i] for i in idx_folds]),
                                                         k=N_FOLDS,
@@ -161,8 +172,6 @@ def build_dataset_age_range(full_dataset, min_age, max_age, dataset_name, includ
 
 
 
-
-
         with ecv_file.open("wb") as f:
             pickle.dump(folds, f)
 
@@ -172,8 +181,9 @@ def build_dataset_age_range(full_dataset, min_age, max_age, dataset_name, includ
 inc_bad_qual = True
 
 full_dataset_w_bad_quality, full_dataset_w_bad_quality_folds = build_full_dataset(name="all", img_shape=RESIZED_SHAPE,
-                                                                                  include_bad_quality_images=inc_bad_qual)
-range_dataset_w_bad_quality, range_dataset_w_bad_quality_folds = build_dataset_age_range(full_dataset_w_bad_quality,
+                                                                                 include_bad_quality_images=inc_bad_qual)
+if FIXED_GROUPS == False:
+    range_dataset_w_bad_quality, range_dataset_w_bad_quality_folds = build_dataset_age_range(full_dataset_w_bad_quality,
                                                                                          min_age=MIN_AGE * 365,
                                                                                          max_age=MAX_AGE * 365,
                                                                                          dataset_name=RNG_DATASET_NAME,

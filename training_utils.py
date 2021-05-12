@@ -1,19 +1,14 @@
 import torch
 from config import DEVICE, OMEGA
 
-def train(model, loader, age_criterion, sex_criterion, optimizer, writer, fold, steps):
+def train(model, loader, age_criterion, sex_criterion, optimizer):
     model.train()
     torch.set_grad_enabled(True)
-    total_steps=0
     for i, data in enumerate(loader):
         img, label = data
-        age = label[0]
-        sex = label[1]
-
-
         img = img.to(DEVICE)
-        age = age.to(DEVICE)
-        sex = sex.to(DEVICE)
+        age = label[0].to(DEVICE)
+        sex = label[1].to(DEVICE)
 
         size = len(age)
 
@@ -32,28 +27,22 @@ def train(model, loader, age_criterion, sex_criterion, optimizer, writer, fold, 
         comb_loss = (OMEGA * age_loss) + sex_loss
         comb_loss.backward()
         optimizer.step()
-        writer.add_scalar('{}-fold Train Total Loss'.format(fold),
-                          comb_loss, i+steps)
-        writer.add_scalar('{}-fold Train Age Loss'.format(fold),
-                          age_loss, i * steps)
-        writer.add_scalar('{}-fold Train Sex Loss'.format(fold),
-                          sex_loss, i+steps)
-        total_steps+=1
-    return total_steps
 
 
-def validate(model, loader, age_criterion, sex_criterion,writer,fold, mode = 'val'):
+
+def validate(model, loader, age_criterion, sex_criterion, mode = 'val'):
     model.eval()
     batch_losses_age = 0
     batch_losses_sex = 0
     batch_comb_loss = 0
+
     total_steps = 0  # Número de lotes
+
     batch_age_diff_avg = 0
     batch_sex_diff_avg = 0
 
-
-    age_pred= torch.empty(0).to(DEVICE)
-    age_data= torch.empty(0).to(DEVICE)
+    age_pred = torch.empty(0).to(DEVICE)
+    age_data = torch.empty(0).to(DEVICE)
     sex_pred = torch.empty(0).to(DEVICE)
     sex_data = torch.empty(0).to(DEVICE)
 
@@ -89,7 +78,6 @@ def validate(model, loader, age_criterion, sex_criterion,writer,fold, mode = 'va
             age_pred = torch.cat((age_pred, age_out), 0)
             sex_data = torch.cat((sex_data, sex), 0)
             sex_pred = torch.cat((sex_pred, sex_out), 0)
-            writer.add_scalar('{}-fold Test Batch Age Diff Mean'.format(fold), torch.sum(torch.sub(age, age_out))/len(age), i)
 
 
     # Calcular o coste de idade dividindo a variable batch_losses_age polo numero de lotes

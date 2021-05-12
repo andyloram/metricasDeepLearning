@@ -1,5 +1,14 @@
 import numpy as np
+import pandas as pd
+from pathlib import Path
 from sklearn.metrics import roc_auc_score, recall_score, precision_score, accuracy_score
+from config import RNG_DATASET_NAME
+from matplotlib import pyplot as plt
+
+file_name = RNG_DATASET_NAME
+RESULTS_WEIGHTS_PATH = Path(__file__).parent.absolute() / file_name
+if not RESULTS_WEIGHTS_PATH.is_dir():
+    RESULTS_WEIGHTS_PATH.mkdir()
 
 def resize_single_image(image, target_size):
     import numpy as np
@@ -59,16 +68,42 @@ def stratified_cv_split_ttv_age_and_sex(age: np.array, sex: np.array, k: int, or
 
     return folds
 
+def save_results(age, age_pred, sex, sex_pred):
+    n_age = age.cpu().numpy()
+    n_age_pred = age_pred.cpu().numpy()
+    n_sex = sex.cpu().numpy()
+    n_sex_pred = sex_pred.cpu().numpy()
+    error_age = n_age - n_age_pred
+    result = pd.DataFrame()
+    result["Edad real"] = n_age
+    result["Edad pred"] = n_age_pred
+    result["Sexo real"] = n_sex
+    result["Sexo pred"] = n_sex_pred
+    result["Edad error"]= error_age
+    result.to_csv(RESULTS_WEIGHTS_PATH.joinpath("results.csv"), index=False)
+    fig, axs = plt.subplots(3, 2)
+    axs[0, 0].hist(n_age)
+    axs[0, 0].set_title("Real data")
+    axs[0, 1].hist(n_age_pred)
+    axs[0, 1].set_title("Predictions")
+    axs[1, 0].hist(error_age)
+    axs[1, 0].set_title("Error")
+    axs[1, 1].hist(np.absolute(error_age))
+    axs[1, 1].set_title("Abs Error")
+    axs[1, 0].hist(error_age)
+    axs[2, 0].set_title("Diagrama Difusion Edad")
+    axs[2, 0].scatter(n_age, n_age_pred)
+    axs[2, 1].set_title("Diagrama Difusion Sexo")
+    axs[2, 1].scatter(n_sex, n_sex_pred)
+    fig.tight_layout()
+    plt.savefig(RESULTS_WEIGHTS_PATH.joinpath("graf_results.png"))
+    plt.close(fig)
+
 def print_metrics(age, age_pred, sex, sex_pred, print_file):
     n_age = age.cpu().numpy()
     n_age_pred = age_pred.cpu().numpy()
     n_sex = sex.cpu().numpy()
     n_sex_pred = sex_pred.cpu().numpy()
-
-    #print(n_age)
-    #print(n_age_pred)
-    #print(n_sex)
-    #print(n_sex_pred)
 
     error_age= n_age - n_age_pred
     rmse_age = np.sqrt(np.mean(np.square(error_age)))
@@ -97,5 +132,4 @@ def print_metrics(age, age_pred, sex, sex_pred, print_file):
     print("Specificity sex: {:.2f}".format(precision_score(n_sex, np.round(n_sex_pred))), file=print_file)
     print("AUC sex: {:.2f}".format(roc_auc_score(n_sex, n_sex_pred)), file=print_file)
 
-    return me
 
